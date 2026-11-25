@@ -1,0 +1,35 @@
+{
+  "name": "wordpet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "content:fetch": "node scripts/fetch-wiktionary.mjs 1000",
+    "content:build": "npm run dictionary:build",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "release:linux": "node scripts/release-linux.mjs",
+    "dictionary:build": "node scripts/build-dictionary.mjs",
+    "content:build:wiktionary": "node scripts/build-content.mjs 1000"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "3.54.1-build1",
+    "@tauri-apps/api": "2.12.5",
+    "ts-fsrs": "6.0.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}

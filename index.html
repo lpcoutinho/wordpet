@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>wordpet — vocabulary trainer</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body { margin: 0; height: 100%; background: #0c1118; }
+      .boot {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        color: #e7edf5;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 13px;
+      }
+      .boot__face {
+        width: 96px;
+        height: 79px;
+        box-sizing: border-box;
+        border: 2px solid #2a3a4c;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #24354a, #1a2736);
+        position: relative;
+      }
+      .boot__eye {
+        position: absolute;
+        top: 28px;
+        width: 9px;
+        height: 6px;
+        border-radius: 3px;
+        background: #dce8f5;
+      }
+      .boot__eye--left { left: 22px; }
+      .boot__eye--right { right: 22px; }
+      .boot__mouth {
+        position: absolute;
+        top: 42px;
+        left: 50%;
+        width: 26px;
+        height: 5px;
+        transform: translateX(-50%);
+        border-bottom: 2px solid #dce8f5;
+        border-radius: 0 0 14px 14px;
+      }
+      .boot__label { margin: 0; color: #8296ad; }
+      .boot__bar { width: 180px; height: 3px; overflow: hidden; border-radius: 3px; background: #2a3a4c; }
+      .boot__bar span { display: block; width: 40%; height: 100%; border-radius: inherit; background: #7dd3a0; animation: boot-slide 1.2s ease-in-out infinite; }
+      @keyframes boot-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(350%); } }
+      @media (prefers-reduced-motion: reduce) { .boot__bar span { animation: none; width: 100%; } }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="boot" data-role="splash" role="status" aria-live="polite">
+        <div class="boot__face" aria-hidden="true">
+          <span class="boot__eye boot__eye--left"></span>
+          <span class="boot__eye boot__eye--right"></span>
+          <span class="boot__mouth"></span>
+        </div>
+        <p class="boot__label" data-role="splash-status">Loading wordpet…</p>
+        <div class="boot__bar" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+src-tauri/target/
+content/generated/*.sqlite
+backups/
+releases/
