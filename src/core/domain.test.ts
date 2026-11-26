@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ContentPack, PackItem } from '../content/types';
-import { buildChoices, nextItem, playableItems, toItem } from './item';
+import { buildChoices, clozeSentence, nextItem, normalizeAnswer, playableItems, promptFormatFor, toItem } from './item';
 import { awardFor, ratingFor } from './rewards';
 import { createScheduler } from './scheduler';
 import { computeMetrics, type GameplayEvent } from './metrics';
@@ -69,6 +69,29 @@ describe('nucleo de domino', () => {
     expect(target.sensesEn).toEqual(['Definition of house.']);
   });
 
+  it('monta cloze com o lema no exemplo', () => {
+    const source = item('house', 1);
+    source.example_en = 'The house is near the river.';
+    expect(clozeSentence(toItem(source))).toBe('The ______ is near the river.');
+    source.example_en = 'A building is nearby.';
+    expect(clozeSentence(toItem(source))).toBeNull();
+  });
+
+  it('alterna para cloze depois de duas repeticoes quando ha exemplo', () => {
+    const source = item('house', 1);
+    source.example_en = 'The house is near the river.';
+    const withExample = toItem(source);
+    expect(promptFormatFor(withExample, 0)).toBe('choice');
+    expect(promptFormatFor(withExample, 2)).toBe('cloze');
+    expect(promptFormatFor(withExample, 4)).toBe('typing');
+    expect(promptFormatFor(toItem(item('water', 2)), 2)).toBe('choice');
+    expect(promptFormatFor(toItem(item('water', 4)), 4)).toBe('typing');
+  });
+
+  it('normaliza resposta digitada ignorando caixa e pontuacao', () => {
+    expect(normalizeAnswer('  Ice-Cream! ')).toBe('icecream');
+  });
+
   it('prioriza vencidos com amostragem ponderada e depois itens novos', () => {
     const items = playableItems(pack);
     const now = new Date('2026-11-25T12:00:00Z');
@@ -80,10 +103,13 @@ describe('nucleo de domino', () => {
     expect(nextItem(items, { get: () => undefined }, now, () => 0)?.lemma).toBe('house');
   });
 
-  it('concede XP apenas em acerto antes da revelacao', () => {
-    expect(awardFor({ revealed: false, correct: true })).toBe(10);
-    expect(awardFor({ revealed: true, correct: true })).toBe(0);
-    expect(awardFor({ revealed: false, correct: false })).toBe(0);
+  it('concede XP por confianca apenas em acerto antes da revelacao', () => {
+    expect(awardFor({ revealed: false, correct: true, rating: 1 })).toBe(5);
+    expect(awardFor({ revealed: false, correct: true, rating: 2 })).toBe(5);
+    expect(awardFor({ revealed: false, correct: true, rating: 3 })).toBe(10);
+    expect(awardFor({ revealed: false, correct: true, rating: 4 })).toBe(15);
+    expect(awardFor({ revealed: true, correct: true, rating: 4 })).toBe(0);
+    expect(awardFor({ revealed: false, correct: false, rating: 4 })).toBe(0);
     expect(ratingFor({ revealed: false, correct: false })).toBe(1);
     expect(ratingFor({ revealed: false, correct: true })).toBe(3);
   });

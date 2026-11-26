@@ -1,6 +1,6 @@
 {
   "name": "wordpet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -18,7 +18,8 @@
     "tauri:build": "tauri build",
     "release:linux": "node scripts/release-linux.mjs",
     "dictionary:build": "node scripts/build-dictionary.mjs",
-    "content:build:wiktionary": "node scripts/build-content.mjs 1000"
+    "content:build:wiktionary": "node scripts/build-content.mjs 1000",
+    "verify:migration": "node scripts/verify-pack-migration.mjs"
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "3.54.1-build1",

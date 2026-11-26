@@ -34,7 +34,7 @@ Android, nuvem, contas, telemetria, digitação, escuta, frases, gramática, exp
 
 ### Status
 
-Protótipo web e versão taskbar Tauri implementados e validados. O pack agora usa `EnglishDictionary` como fonte principal: 102.104 entradas lidas, 99.237 cartões jogáveis e 2.867 itens em revisão. Persistência OPFS, FSRS-7, caderno de palavras tocadas e métricas de recall diferido. Ver `docs/plano-fase-0.md` e `docs/adr/0008-english-dictionary-como-fonte-principal.md`.
+Protótipo web e versão taskbar Tauri implementados e validados no Linux e no Windows. O pack usa `EnglishDictionary` como fonte principal: 102.104 entradas lidas, 99.237 cartões jogáveis, 2.867 itens em revisão e 693 com exemplos do cache Wiktionary. Persistência OPFS, FSRS-7, caderno de palavras tocadas, rating explícito com XP variável, formatos `choice`/`cloze`/`typing`, streak diário, pet evolutivo por estabilidade, convite de ociosidade e painel/CSV de evidência local. Ver `docs/plano-fase-0.md` e `docs/adr/0008-english-dictionary-como-fonte-principal.md`.
 
 ## Releases
 
@@ -44,14 +44,14 @@ Protótipo web e versão taskbar Tauri implementados e validados. O pack agora u
 ## Fases seguintes
 
 1. **Desktop**: Tauri 2 no Linux com ícone de bandeja e janela transparente já implementado em X11; Wayland e sobreposição da taskbar seguem como feature flag.
-2. **Conteúdo expandido**: digitação e escuta, depois `sentence`, `grammar` e `idiom` como itens com estados independentes, inspirados no fluxo de frases completas do `earthworm`.
+2. **Conteúdo expandido**: `cloze` e digitação já disponíveis; escuta segue opt-in, e `sentence`, `grammar` e `idiom` virão como itens com estados independentes.
 3. **Android**: `DreamService` ativado manualmente pelo usuário nas configurações; plano B de `WallpaperService` ou widget de lockscreen; sem `SYSTEM_ALERT_WINDOW` no início.
 4. **Nuvem**: Postgres auto-hospedado recebe eventos idempotentes da fila local; manter o contrato de eventos versionado para trocar de backend sem reescrever a regra do jogo.
 
 ## Riscos conhecidos
 
 - **pt-BR manual**: traduções ficam em template separado e não aparecem no jogo; não existe dataset aberto grande que reúna definição, tradução, áudio e nível.
-- **Licenças**: a lista do Google tem ressalva da LDC para uso comercial; o conteúdo do `shelfom` é CC BY-NC; Wiktionary é CC BY-SA/GFDL e o áudio do Tatoeba precisa de checagem por arquivo. O repo é privado e nenhum crédito é exibido.
+- **Licenças**: a lista do Google tem ressalva da LDC para uso comercial; o conteúdo do `shelfom` é CC BY-NC; Wiktionary é CC BY-SA/GFDL e o áudio do Tatoeba precisa de checagem por arquivo. O repo é público sob MIT e nenhum crédito é exibido dentro do app.
 - **Taskbar**: não há API suportada para desenhar dentro da taskbar do Windows 11; no Linux, Wayland limita posicionamento de janelas.
 - **Screensaver Android**: o aplicativo não pode iniciar o dream programaticamente e fabricantes podem esconder a opção.
 - **Evidência pedagógica**: não há ensaio controlado sobre jogos idle para vocabulário; a eficácia é hipótese a medir desde a primeira versão.

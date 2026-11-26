@@ -1,13 +1,16 @@
 # wordpet
 
-Um jogo idle/incremental para praticar inglês que vive na taskbar. Um pet compacto mostra definitions curtas em inglês, você responde e o FSRS-7 agenda a próxima revisão. Tudo roda localmente com SQLite/WASM (OPFS), sem servidor e sem coleta de dados.
+Um jogo idle/incremental para praticar inglês que vive na taskbar. Um pet compacto mostra definições curtas em inglês, você responde e o FSRS-7 agenda a próxima revisão. Tudo roda localmente com SQLite/WASM (OPFS), sem servidor e sem coleta de dados.
 
-> Status: protótipo/Fase 0 — versão `0.1.0`.
+> Status: protótipo/Fase 0 — versão `0.2.0`. Repositório público: <https://github.com/lpcoutinho/wordpet>.
 
 ## O que já existe
 
-- Cartão com o pet, quatro alternativas em inglês e feedback com XP e sequência.
-- FSRS-7 com retenção-alvo `0,9`, fila por `dueAt` e métricas de recall 1d/7d.
+- Cartão com o pet, alternativas em inglês e feedback com XP variável por rating (`Again/Hard=5`, `Good=10`, `Easy=15`).
+- Formatos `choice`, `cloze` e `typing` selecionados por repetição; `listening` fica opt-in para depois.
+- Pet evolui por estabilidade FSRS, streak diário por recall verificado e convite leve após ociosidade.
+- Painel local de evidência com recall 1d/7d, contagem por formato/rating e exportação CSV.
+- FSRS-7 com retenção-alvo `0,9`, fila por `dueAt` e 693 itens com exemplos do cache Wiktionary para cloze.
 - Persistência local em SQLite/WASM sobre OPFS; progresso sobrevive ao fechamento do app.
 - Janela sempre no topo, ancorada no canto inferior direito, ícone do pet na bandeja.
 - Splash de carregamento e dicionário carregado como asset separado (o bundle inicial do JS tem ~67 kB).
@@ -44,7 +47,7 @@ Os artefatos ficam em `releases/` (Linux) e `src-tauri/target/release/bundle/` (
 ## Estrutura
 
 - `src/core/`: lógica pura do domínio (FSRS-7, recompensas, métricas), sem DOM.
-- `src/content/`: pack de conteúdo usado pelo app (`pack.json`版本ado para o build funcionar sem regeneração).
+- `src/content/`: pack de conteúdo usado pelo app (`pack.json` versionado para o build funcionar sem regeneração).
 - `src/db.worker.ts` e `src/platform/web/persistence.ts`: worker SQLite e persistência OPFS.
 - `src/ui/`: cartão, sprite do pet e estilos.
 - `src-tauri/`: configuração e código Rust do Tauri (janela, bandeja, empacotamento).

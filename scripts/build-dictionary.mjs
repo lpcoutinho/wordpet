@@ -1,14 +1,26 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import {
   cleanDictionarySenses,
   inferDictionaryPos,
   shortGloss,
   weightForRank,
 } from '../src/content/dictionary.ts';
+import {
+  englishSection,
+  extractDefinitions,
+  posSections,
+} from '../src/content/parse-wiktionary.ts';
 
 const RETRIEVED_AT = '2026-11-25T00:00:00Z';
+const CACHE = 'content/cache/en_wiktionary/pages';
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+const cachePath = (title) => path.join(CACHE, `${encodeURIComponent(title)}.json`);
+const readCached = async (title) => existsSync(cachePath(title))
+  ? JSON.parse(await readFile(cachePath(title), 'utf8'))
+  : null;
 
 const rawText = await readFile('references/dictionary_arrays.json', 'utf8');
 const groups = JSON.parse(rawText);
@@ -34,6 +46,15 @@ for (const group of groups) {
     }
     const frequencyRank = ranks.get(lemma) ?? null;
     const rank = frequencyRank ?? 1_000_000 + items.length;
+    const record = await readCached(lemma);
+    const escaped = lemma.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lemmaPattern = new RegExp(`\\b${escaped}\\b`, 'i');
+    const examplesEn = record
+      ? [...new Set(posSections(englishSection(record.wikitext))
+        .flatMap((section) => extractDefinitions(section.body))
+        .flatMap((definition) => definition.examples)
+        .filter((example) => lemmaPattern.test(example)))]
+      : [];
     items.push({
       id: `EnglishDictionary|${lemma}`,
       rank,
@@ -45,8 +66,8 @@ for (const group of groups) {
       definition_en: senses.join('\n'),
       prompt_en: shortGloss(senses),
       gloss_en: shortGloss(senses),
-      example_en: null,
-      examples_en: [],
+      example_en: examplesEn[0] ?? null,
+      examples_en: examplesEn,
       translation_ptbr: '',
       status: 'ok',
       match_confidence: 'high',
@@ -67,7 +88,7 @@ items.sort((left, right) => left.rank - right.rank || left.lemma.localeCompare(r
 review.sort((left, right) => left.lemma.localeCompare(right.lemma));
 
 const pack = {
-  version: 'EnglishDictionary-2026-11-25.1',
+  version: 'EnglishDictionary-2026-11-25.2',
   built_at: RETRIEVED_AT,
   checksum: sha256(JSON.stringify(items)),
   source: {
@@ -88,13 +109,21 @@ const pack = {
 await writeFile('content/generated/EnglishDictionary.json', `${JSON.stringify(groups, null, 2)}\n`, 'utf8');
 await writeFile('src/content/pack.json', `${JSON.stringify(pack)}\n`, 'utf8');
 await writeFile('content/review-queue.json', `${JSON.stringify({ built_at: RETRIEVED_AT, items: review }, null, 2)}\n`, 'utf8');
-await writeFile('content/CREDITS.md', 'No attribution is displayed in the app.\n', 'utf8');
+await writeFile('content/CREDITS.md', [
+  '# Créditos de conteúdo',
+  '',
+  'Definições: EnglishDictionary local.',
+  'Exemplos: English Wiktionary sob CC BY-SA 4.0, quando disponíveis no cache local.',
+  'Atribuição completa em NOTICE.md.',
+  '',
+].join('\n'), 'utf8');
 await writeFile('content/translations/pt-br.template.json', `${JSON.stringify({
   version: pack.version,
   items: [],
 }, null, 2)}\n`, 'utf8');
 
 console.log(`entradas: ${seen.size} | jogaveis: ${items.length} | revisao: ${review.length}`);
+console.log(`com exemplo: ${items.filter((item) => item.example_en !== null).length}`);
 console.log(`frequencia conhecida: ${items.filter((item) => item.frequency_rank !== null).length}`);
 console.log(`checksum: ${pack.checksum}`);
 console.log(`raw sha256: ${sha256(rawText)}`);

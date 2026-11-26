@@ -3,6 +3,8 @@ import { shortGloss, weightForRank } from '../content/dictionary';
 
 export type ItemType = 'word_sense' | 'sentence' | 'idiom';
 
+export type PromptFormat = 'choice' | 'cloze' | 'typing' | 'listening';
+
 export interface Item {
   id: string;
   type: ItemType;
@@ -69,6 +71,23 @@ const seed = (value: string): number => {
 
 export const playableItems = (pack: ContentPack): Item[] =>
   pack.items.filter((item) => item.status === 'ok' && Boolean(item.definition_en)).map(toItem);
+
+export const clozeSentence = (item: Item): string | null => {
+  if (!item.exampleEn) return null;
+  const escaped = item.lemma.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`\\b${escaped}\\b`, 'i').exec(item.exampleEn);
+  if (!match) return null;
+  return `${item.exampleEn.slice(0, match.index)}______${item.exampleEn.slice(match.index + match[0].length)}`;
+};
+
+export const normalizeAnswer = (value: string): string =>
+  value.trim().toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+export const promptFormatFor = (item: Item, reps: number): PromptFormat => {
+  if (reps >= 4) return 'typing';
+  if (reps >= 2 && clozeSentence(item) !== null) return 'cloze';
+  return 'choice';
+};
 
 export const buildChoices = (item: Item, pack: ContentPack, size = 4, available?: Item[]): Choice[] => {
   const sourceItems = available ?? playableItems(pack);

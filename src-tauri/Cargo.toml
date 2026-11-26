@@ -1,6 +1,6 @@
 [package]
 name = "wordpet"
-version = "0.1.0"
+version = "0.2.0"
 description = "Idle English vocabulary game"
 authors = ["lpcoutinho"]
 edition = "2021"

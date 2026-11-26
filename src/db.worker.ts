@@ -39,7 +39,7 @@ type Incoming =
   | { id: number; type: 'markWord'; card: SerializedCard; at: string }
   | { id: number; type: 'unmarkWord'; itemId: string };
 
-interface Db {
+export interface Db {
   exec(options: { sql: string; bind?: unknown[] }): unknown;
   selectObjects(sql: string, bind?: unknown[]): Array<Record<string, unknown>>;
   selectValue(sql: string, bind?: unknown[]): unknown;
@@ -54,7 +54,7 @@ const post = (message: unknown): void => {
   (self as unknown as { postMessage(value: unknown): void }).postMessage(message);
 };
 
-const SCHEMA = `
+export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS content_pack (
   version TEXT PRIMARY KEY,
   checksum TEXT NOT NULL,
@@ -141,6 +141,48 @@ const run = (connection: Db, sql: string, bind: unknown[] = []): void => {
   connection.exec({ sql, bind });
 };
 
+export const initPack = (connection: Db, pack: ContentPack): { version: string; reused: boolean } => {
+  const version = pack.version;
+  run(connection, 'DELETE FROM item WHERE pack_version <> ?', [version]);
+  const existingChecksum = connection.selectValue('SELECT checksum FROM content_pack WHERE version = ?', [version]);
+  const existingCount = Number(connection.selectValue('SELECT COUNT(*) FROM item WHERE pack_version = ?', [version]) ?? 0);
+  if (existingChecksum === pack.checksum && existingCount === pack.items.length && existingCount > 0) {
+    return { version, reused: true };
+  }
+  run(connection, 'BEGIN');
+  try {
+    run(connection, `INSERT OR REPLACE INTO content_pack (version, checksum, built_at, source) VALUES (?, ?, ?, ?)`, [
+      version, pack.checksum, pack.built_at, JSON.stringify(pack.source),
+    ]);
+    run(connection, 'DELETE FROM item WHERE pack_version = ?', [version]);
+    const insertItem = connection.prepare(`INSERT INTO item
+        (item_id, pack_version, lemma, pos, sense_index, definition_en, translation_ptbr,
+         source_id, source_url, license, payload)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    try {
+      for (const item of pack.items) {
+        insertItem.bind([
+          item.id, version, item.lemma, item.pos, item.sense_index, item.definition_en,
+          item.translation_ptbr, item.source_id, item.source_url, item.license,
+          JSON.stringify({
+            gloss_en: item.gloss_en,
+            examples_en: item.examples_en,
+            weight: item.weight,
+            frequency_rank: item.frequency_rank,
+          }),
+        ]).stepReset();
+      }
+    } finally {
+      insertItem.finalize();
+    }
+    run(connection, 'COMMIT');
+  } catch (error) {
+    run(connection, 'ROLLBACK');
+    throw error;
+  }
+  return { version, reused: false };
+};
+
 const insertEvent = (connection: Db, event: GameplayEvent): void => {
   run(connection, `INSERT OR IGNORE INTO gameplay_event
     (event_id, name, item_id, occurred_at, schema_version, pack_version, payload)
@@ -178,45 +220,8 @@ const upsertCard = (connection: Db, card: SerializedCard): void => {
 
 const handle = (message: Incoming): unknown => {
   if (message.type === 'init') {
-    const connection = db!;
-    const version = message.pack.version;
-    const existingChecksum = connection.selectValue('SELECT checksum FROM content_pack WHERE version = ?', [version]);
-    const existingCount = Number(connection.selectValue('SELECT COUNT(*) FROM item WHERE pack_version = ?', [version]) ?? 0);
-    if (existingChecksum === message.pack.checksum && existingCount === message.pack.items.length && existingCount > 0) {
-      return { initialized: true, version, sqliteVersion, reused: true };
-    }
-    run(connection, 'BEGIN');
-    try {
-      run(connection, `INSERT OR REPLACE INTO content_pack (version, checksum, built_at, source) VALUES (?, ?, ?, ?)`, [
-        version, message.pack.checksum, message.pack.built_at, JSON.stringify(message.pack.source),
-      ]);
-      run(connection, 'DELETE FROM item WHERE pack_version = ?', [version]);
-      const insertItem = connection.prepare(`INSERT INTO item
-          (item_id, pack_version, lemma, pos, sense_index, definition_en, translation_ptbr,
-           source_id, source_url, license, payload)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-      try {
-        for (const item of message.pack.items) {
-          insertItem.bind([
-            item.id, version, item.lemma, item.pos, item.sense_index, item.definition_en,
-            item.translation_ptbr, item.source_id, item.source_url, item.license,
-            JSON.stringify({
-              gloss_en: item.gloss_en,
-              examples_en: item.examples_en,
-              weight: item.weight,
-              frequency_rank: item.frequency_rank,
-            }),
-          ]).stepReset();
-        }
-      } finally {
-        insertItem.finalize();
-      }
-      run(connection, 'COMMIT');
-    } catch (error) {
-      run(connection, 'ROLLBACK');
-      throw error;
-    }
-    return { initialized: true, version, sqliteVersion, reused: false };
+    const initialized = initPack(db!, message.pack);
+    return { initialized: true, ...initialized, sqliteVersion };
   }
 
   if (message.type === 'getState') {

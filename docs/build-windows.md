@@ -93,7 +93,7 @@ Esperado: Node `v24.x`, `rustc` >= `1.95.0` (exigido por `src-tauri/Cargo.toml`)
 
 ### 4.1 Se for gerar uma versão nova
 
-Atualize o mesmo `X.Y.Z` nos cinco lugares (hoje todos em `0.1.0`):
+Atualize o mesmo `X.Y.Z` nos cinco lugares (hoje todos em `0.2.0`):
 
 | Arquivo | Campo |
 | --- | --- |
